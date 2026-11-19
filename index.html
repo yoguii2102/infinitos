@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070516">
+<title>Te amo en todos los idiomas</title>
+
+<style>
+  /* ==========================================================
+     BASE · pantalla completa, sin scroll, fondo nocturno
+     ========================================================== */
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html, body{
+    width:100%; height:100%;
+    overflow:hidden;
+    background:#05030f;
+  }
+
+  body{
+    width:100vw;
+    height:100vh;           /* fallback */
+    height:100dvh;          /* móviles: respeta la barra del navegador */
+    font-family: Georgia, "Times New Roman", serif;
+    color:#fff;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none; user-select:none;
+    /* Cielo: negro → azul noche → violeta, con nebulosas suaves */
+    background:
+      radial-gradient(60% 50% at 50% 42%, rgba(130,30,110,.40), transparent 70%),
+      radial-gradient(45% 40% at 14% 88%, rgba(50,40,170,.32), transparent 70%),
+      radial-gradient(45% 40% at 90% 10%, rgba(95,30,160,.32), transparent 70%),
+      linear-gradient(180deg, #05030f 0%, #0b0620 50%, #12062b 100%);
+  }
+
+  /* Viñeta para dar profundidad */
+  body::after{
+    content:""; position:fixed; inset:0; z-index:3; pointer-events:none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+
+  /* ==========================================================
+     CAPAS
+     0 estrellas/partículas · 1 fuegos artificiales · 2 corazón
+     ========================================================== */
+  .layer{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; }
+  #stars{ z-index:0; }
+  #fx{ z-index:1; opacity:.92; }
+
+  #stage{
+    position:fixed; inset:0; z-index:2;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:4vh 3vw;
+    pointer-events:none;
+  }
+
+  #heartWrap{ position:relative; flex:none; }
+
+  /* Resplandor detrás del corazón: crece a medida que se rellena */
+  #glow{
+    position:absolute; left:50%; top:46%;
+    width:135%; height:135%;
+    transform:translate(-50%,-50%);
+    background: radial-gradient(closest-side,
+                rgba(255,55,110,.50),
+                rgba(255,55,110,.14) 55%,
+                transparent 76%);
+    opacity:0;
+    transition:opacity .5s linear;
+    pointer-events:none;
+  }
+
+  /* Halo propio del "Te amo" central: brillo suave que late */
+  #centerAura{
+    position:absolute; left:50%; top:50%;
+    width:62%; height:44%;
+    transform:translate(-50%,-50%);
+    background: radial-gradient(closest-side,
+                rgba(255,235,242,.55),
+                rgba(255,120,170,.22) 52%,
+                transparent 78%);
+    filter:blur(2px);
+    pointer-events:none;
+    animation:centerPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes centerPulse{
+    0%,100%{ transform:translate(-50%,-50%) scale(1);    opacity:.55; }
+    50%    { transform:translate(-50%,-50%) scale(1.09); opacity:.88; }
+  }
+
+  #heart{ position:relative; display:block; transform-origin:50% 46%; }
+
+  /* Contorno fijo: la silueta no depende de la longitud de las palabras */
+  #heartOutline{
+    position:absolute; inset:0; width:100%; height:100%;
+    pointer-events:none; overflow:visible;
+    filter:drop-shadow(0 0 3px rgba(255,105,160,.70));
+  }
+  #heartOutlineShadow, #heartOutlinePath{
+    fill:none; stroke-linejoin:round; stroke-linecap:round;
+    vector-effect:non-scaling-stroke;
+  }
+  #heartOutlineShadow{ stroke:rgba(60,8,42,.45); stroke-width:3px; }
+  #heartOutlinePath{ stroke:rgba(255,232,242,.85); stroke-width:1.6px; }
+
+  /* ==========================================================
+     FRASE FINAL
+     ========================================================== */
+  .caption{
+    margin-top:clamp(14px, 3vh, 30px);
+    max-width:min(92vw, 880px);
+    padding:0 4vw;
+    text-align:center;
+    font-style:italic;
+    font-size:clamp(1rem, 2.5vw, 1.7rem);
+    line-height:1.5;
+    letter-spacing:.01em;
+    color:#ffe9f0;
+    text-shadow: 0 0 14px rgba(255,90,140,.60), 0 0 34px rgba(255,170,90,.28);
+  }
+  .caption .w{
+    display:inline-block;
+    opacity:0; transform:translateY(10px); filter:blur(6px);
+    transition: opacity 1.1s ease, transform 1.1s ease, filter 1.1s ease;
+  }
+  .caption.show .w{ opacity:1; transform:none; filter:none; }
+
+  /* ==========================================================
+     EFECTO FINAL: destello + latido (solo cuando el corazón se completa)
+     ========================================================== */
+  @keyframes flash{
+    0%  { filter:brightness(1); }
+    30% { filter:brightness(1.55) drop-shadow(0 0 26px rgba(255,120,160,.9)); }
+    100%{ filter:brightness(1); }
+  }
+  @keyframes beat{
+    0%,100%{ transform:scale(1); }
+    14%    { transform:scale(1.035); }
+    28%    { transform:scale(1); }
+    42%    { transform:scale(1.022); }
+    70%    { transform:scale(1); }
+  }
+  @keyframes glowBeat{
+    0%,100%{ opacity:.78; }
+    14%    { opacity:1; }
+    28%    { opacity:.80; }
+    42%    { opacity:.95; }
+  }
+  #heartWrap.done #heart{
+    animation: flash 1.8s ease-out 1, beat 2.4s ease-in-out 1.8s infinite;
+  }
+  #heartWrap.done #glow{
+    animation: glowBeat 2.4s ease-in-out 1.8s infinite;
+  }
+
+  /* Destello único en el gran final */
+  #finalFlash{
+    position:fixed; inset:0; z-index:4; pointer-events:none;
+    background: radial-gradient(circle at center,
+                rgba(255,240,246,.85),
+                rgba(255,120,170,.28) 45%,
+                transparent 75%);
+    opacity:0;
+  }
+  #finalFlash.fire{ animation:finalFlash 1.1s ease-out 1; }
+  @keyframes finalFlash{
+    0%  { opacity:0; }
+    12% { opacity:.72; }
+    100%{ opacity:0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #heartWrap.done #heart, #heartWrap.done #glow{ animation:none; }
+    #centerAura{ animation:none; opacity:.7; }
+    #finalFlash.fire{ animation:none; }
+  }
+</style>
+</head>
+
+<body>
+  <canvas id="stars" class="layer" aria-hidden="true"></canvas>
+  <canvas id="fx"    class="layer" aria-hidden="true"></canvas>
+
+  <main id="stage">
+    <div id="heartWrap">
+      <div id="glow"></div>
+      <div id="centerAura" aria-hidden="true"></div>
+      <canvas id="heart" role="img" aria-label="Un corazón formado por frases de amor en muchos idiomas, con «Te amo» en español en el centro"></canvas>
+      <svg id="heartOutline" viewBox="0 0 33.2 29.6" preserveAspectRatio="none" aria-hidden="true">
+        <path id="heartOutlineShadow"></path>
+        <path id="heartOutlinePath"></path>
+      </svg>
+    </div>
+    <p id="caption" class="caption"></p>
+  </main>
+  <div id="finalFlash" aria-hidden="true"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   CONFIGURACIÓN · todo lo que probablemente quieras cambiar
+   ============================================================ */
+const CONFIG = {
+
+  // Frase que aparece bajo el corazón cuando está completo
+  caption: 'Te amo infinitos mi princesa hermosa',
+
+  // Tiempos (segundos)
+  timing: {
+    outlineDelay:   0.8,   // cuándo empieza a dibujarse el contorno
+    outlineSeconds: 3.4,   // lo que tarda el contorno en trazarse
+    fillDelay:      1.8,   // cuándo empieza el relleno
+    fillSeconds:    11,    // duración del relleno (el total ronda los 14 s)
+    itemFade:       0.8,   // aparición de cada frase
+    captionDelay:   1.2    // espera tras completarse hasta mostrar la frase final
+  },
+
+  // Fuegos artificiales
+  fireworks: {
+    interval:  [0.9, 1.9],  // segundos entre lanzamientos (mín, máx)
+    maxSparks: 600,         // límite de partículas simultáneas (rendimiento)
+    hues: [340, 350, 355, 12, 40, 48, 280, 300, 215, 190]  // rosas, rojos, dorados, violetas, azules
+  },
+
+  // Colores de las frases
+  palette: {
+    reds:   ['#ff3355', '#ff1f4b', '#e8294a', '#ff5a73'],
+    pinks:  ['#ff7aa2', '#ff9ebb', '#ffb0c8', '#f56a96'],
+    whites: ['#ffffff', '#fff0f5', '#ffe6ee'],
+    golds:  ['#ffd89b', '#f6c76f', '#ffe2b0']
+  },
+
+  // "Te amo" en el mayor número de idiomas posible (añade o quita a tu gusto)
+  phrases: [
+    'Te amo', 'Te quiero', 'I love you', "Je t'aime", 'Ti amo', 'Eu te amo',
+    'Ich liebe dich', '愛してる', '大好き', '사랑해', '我爱你', '我愛你',
+    'Я тебя люблю', 'أحبك', "Σ' αγαπώ", "T'estimo", 'Quérote', 'Maite zaitut',
+    'Ik hou van je', 'Jag älskar dig', 'Jeg elsker deg', 'Jeg elsker dig',
+    'Rakastan sinua', 'Kocham cię', 'Miluji tě', 'Ľúbim ťa', 'Szeretlek',
+    'Te iubesc', 'Обичам те', 'Volim te', 'Я тебе кохаю', 'Seni seviyorum',
+    'אני אוהב אותך', 'دوستت دارم', 'مجھے تم سے محبت ہے', 'मुझे तुमसे प्यार है',
+    'আমি তোমাকে ভালোবাসি', 'நான் உன்னை காதலிக்கிறேன்', 'నేను నిన్ను ప్రేమిస్తున్నాను',
+    'ฉันรักเธอ', 'Anh yêu em', 'Aku cinta kamu', 'Saya cintakan awak', 'Mahal kita',
+    'Nakupenda', 'Ek is lief vir jou', 'Ngiyakuthanda', 'Mo nifẹ rẹ',
+    'Tá grá agam duit', "Rwy'n dy garu di", 'Tha gaol agam ort', 'Mi amas vin',
+    'Aš tave myliu', 'Es tevi mīlu', 'Ma armastan sind', 'Ég elska þig',
+    'Inħobbok', 'Të dua', 'Те сакам', 'Ljubim te', 'მიყვარხარ', 'Ես քեզ սիրում եմ',
+    'Би чамд хайртай', 'म तिमीलाई माया गर्छु', 'මම ඔබට ආදරෙයි', 'ខ្ញុំស្រលាញ់អ្នក',
+    'ຂ້ອຍຮັກເຈົ້າ', 'ချစ်တယ်', 'Мен сені жақсы көремін', 'Seni sevaman', 'Səni sevirəm',
+    "Aloha au iā 'oe", 'Aroha ahau ki a koe', 'Mi amor', 'Te adoro'
+  ]
+};
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const $     = id => document.getElementById(id);
+const rand  = (a, b) => a + Math.random() * (b - a);
+const pick  = arr => arr[(Math.random() * arr.length) | 0];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const TAU   = Math.PI * 2;
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TS = reduceMotion ? 4 : 1;      // factor de velocidad (movimiento reducido → casi instantáneo)
+
+/* ============================================================
+   GEOMETRÍA DEL CORAZÓN (curva paramétrica clásica, exacta y simétrica)
+     x = 16·sin³(t)
+     y = 13·cos t − 5·cos 2t − 2·cos 3t − cos 4t
+   ============================================================ */
+const HX = t => 16 * Math.pow(Math.sin(t), 3);
+const HY = t => 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+
+// Caja que contiene el corazón (unidades de la curva) con un pequeño margen
+const HB = { xr: 16.6, yt: 12.3, yb: -17.3 };
+const HB_W = HB.xr * 2;          // 33.2
+const HB_H = HB.yt - HB.yb;      // 29.6
+
+// Corazón unitario, útil para dibujar corazoncitos y fuegos con forma de corazón
+const UNIT = [];
+for (let i = 0; i < 48; i++) {
+  const t = (i / 48) * TAU;
+  UNIT.push([HX(t) / 17, -(HY(t) + 2.5) / 17]);
+}
+function heartPath(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < UNIT.length; i++) {
+    const x = cx + UNIT[i][0] * r, y = cy + UNIT[i][1] * r;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/* ============================================================
+   REFERENCIAS DEL DOM Y CONTEXTOS
+   ============================================================ */
+const cvStars  = $('stars');
+const cvFx     = $('fx');
+const cvHeart  = $('heart');
+const wrap     = $('heartWrap');
+const glow     = $('glow');
+const captionEl= $('caption');
+const finalFlash= $('finalFlash');
+const outlinePath  = $('heartOutlinePath');
+const outlineShadow= $('heartOutlineShadow');
+
+const sCtx = cvStars.getContext('2d');
+const fCtx = cvFx.getContext('2d');
+const hCtx = cvHeart.getContext('2d');
+
+// Estado de pantalla
+let vw = 0, vh = 0, dpr = 1;
+// Estado del corazón (tamaño en px CSS y escala unidad→px)
+let W = 0, H = 0, S = 0;
+
+// Traza exacta de la curva del corazón en px CSS (para recorte y resplandor)
+function traceHeart(ctx) {
+  ctx.beginPath();
+  const SEG = 480;
+  for (let i = 0; i <= SEG; i++) {
+    const t = (i / SEG) * TAU;
+    const x = toX(HX(t)), y = toY(HY(t));
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+}
+
+// La misma curva en coordenadas del SVG superpuesto (silueta siempre idéntica)
+function buildHeartOutline() {
+  const SEG = 240;
+  let d = '';
+  for (let i = 0; i <= SEG; i++) {
+    const t = (i / SEG) * TAU;
+    d += (i ? ' L' : 'M') + (HX(t) + HB.xr).toFixed(3) + ' ' + (HB.yt - HY(t)).toFixed(3);
+  }
+  d += ' Z';
+  outlinePath.setAttribute('d', d);
+  outlineShadow.setAttribute('d', d);
+}
+
+/* ============================================================
+   FRASE FINAL · se parte en palabras para aparecer una a una
+   ============================================================ */
+(function buildCaption() {
+  const words = CONFIG.caption.split(' ');
+  words.forEach((word, i) => {
+    const span = document.createElement('span');
+    span.className = 'w';
+    span.textContent = word;
+    span.style.transitionDelay = (i * 0.13) + 's';
+    captionEl.appendChild(span);
+    if (i < words.length - 1) captionEl.appendChild(document.createTextNode(' '));
+  });
+})();
+
+/* ============================================================
+   FUENTES · cursiva serif para alfabeto latino, sans para el resto
+   ============================================================ */
+const SERIF = 'Georgia, "Times New Roman", serif';
+const SANS  = 'system-ui, "Segoe UI", "Noto Sans", "Hiragino Sans", "Malgun Gothic", "Microsoft YaHei", "Noto Sans Arabic", "Noto Sans Hebrew", "Noto Sans Devanagari", sans-serif';
+const LATIN = /^[\u0000-\u024F\u1E00-\u1EFF\s'’.,!-]+$/;
+const fontStr = (size, latin) => (latin ? 'italic 500 ' : '500 ') + size.toFixed(1) + 'px ' + (latin ? SERIF : SANS);
+
+/* ============================================================
+   LAYOUT · calcula tamaños según la pantalla
+   ============================================================ */
+const bakedCanvas = document.createElement('canvas');   // frases ya "pegadas" (caché)
+const bCtx = bakedCanvas.getContext('2d');
+
+function setupCtx(ctx) {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+}
+
+function layoutScreen() {
+  vw = window.innerWidth;
+  vh = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);   // limitamos a 2 por rendimiento
+  [[cvStars, sCtx], [cvFx, fCtx]].forEach(([cv, ctx]) => {
+    cv.width  = Math.round(vw * dpr);
+    cv.height = Math.round(vh * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  });
+}
+
+function layoutHeart() {
+  const capH    = captionEl.offsetHeight;
+  const capGap  = clamp(vh * 0.03, 14, 30);
+  const pad     = vh * 0.04;
+  const availW  = Math.min(vw * 0.94, 1100);
+  const availH  = Math.max(140, vh - capH - capGap - pad * 2);
+
+  S = Math.min(availW / HB_W, availH / HB_H);
+  W = Math.round(HB_W * S);
+  H = Math.round(HB_H * S);
+  S = W / HB_W;
+
+  wrap.style.width  = W + 'px';
+  wrap.style.height = H + 'px';
+
+  cvHeart.style.width  = W + 'px';
+  cvHeart.style.height = H + 'px';
+  cvHeart.width  = Math.round(W * dpr);
+  cvHeart.height = Math.round(H * dpr);
+
+  bakedCanvas.width  = cvHeart.width;
+  bakedCanvas.height = cvHeart.height;
+
+  setupCtx(hCtx);
+  setupCtx(bCtx);
+}
+
+// Conversión unidades de la curva → píxeles del lienzo del corazón
+const toX = x => W / 2 + x * S;
+const toY = y => (HB.yt - y) * S;
+
+/* ============================================================
+   CONSTRUCCIÓN DE LAS FRASES DEL CORAZÓN
+   1) Un contorno de frases que siguen exactamente la curva.
+   2) Relleno por empaquetado: de grandes a pequeñas, sin solaparse
+      y siempre dentro del corazón (máscara de píxeles).
+   ============================================================ */
+function buildItems() {
+  const items = [];
+  const T = CONFIG.timing;
+  const P = CONFIG.palette;
+
+  /* ---- Máscara del corazón (para saber qué píxeles están dentro) ---- */
+  const mask = document.createElement('canvas');
+  mask.width = W; mask.height = H;
+  const mc = mask.getContext('2d', { willReadFrequently: true });
+  mc.fillStyle = '#fff';
+  mc.beginPath();
+  const SEG = 720;
+  for (let i = 0; i <= SEG; i++) {
+    const t = (i / SEG) * TAU;
+    const x = toX(HX(t)), y = toY(HY(t));
+    i ? mc.lineTo(x, y) : mc.moveTo(x, y);
+  }
+  mc.closePath();
+  mc.fill();
+  const md = mc.getImageData(0, 0, W, H).data;
+  const inside = (x, y) => {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    return ix >= 0 && iy >= 0 && ix < W && iy < H && md[(iy * W + ix) * 4 + 3] > 128;
+  };
+
+  /* ---- Rejilla de ocupación (detecta solapamientos rápido) ---- */
+  const cell = Math.max(10, Math.round(W / 36));
+  const gc = Math.ceil(W / cell) + 1, gr = Math.ceil(H / cell) + 1;
+  const grid = new Array(gc * gr);
+  for (let i = 0; i < grid.length; i++) grid[i] = [];
+
+  function hits(x0, y0, x1, y1) {
+    const cx0 = clamp(Math.floor(x0 / cell), 0, gc - 1), cx1 = clamp(Math.floor(x1 / cell), 0, gc - 1);
+    const cy0 = clamp(Math.floor(y0 / cell), 0, gr - 1), cy1 = clamp(Math.floor(y1 / cell), 0, gr - 1);
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const list = grid[cy * gc + cx];
+        for (let k = 0; k < list.length; k++) {
+          const r = list[k];
+          if (!(r[2] < x0 || r[0] > x1 || r[3] < y0 || r[1] > y1)) return true;
+        }
+      }
+    }
+    return false;
+  }
+  function occupy(x0, y0, x1, y1) {
+    const r = [x0, y0, x1, y1];
+    const cx0 = clamp(Math.floor(x0 / cell), 0, gc - 1), cx1 = clamp(Math.floor(x1 / cell), 0, gc - 1);
+    const cy0 = clamp(Math.floor(y0 / cell), 0, gr - 1), cy1 = clamp(Math.floor(y1 / cell), 0, gr - 1);
+    for (let cy = cy0; cy <= cy1; cy++)
+      for (let cx = cx0; cx <= cx1; cx++) grid[cy * gc + cx].push(r);
+  }
+
+  /* ---- Medidas de cada frase (a 100 px; se escalan luego) ---- */
+  const scratch = document.createElement('canvas').getContext('2d');
+  const lib = CONFIG.phrases.map(text => {
+    const latin = LATIN.test(text);
+    scratch.font = fontStr(100, latin);
+    return { text, latin, w100: scratch.measureText(text).width };
+  });
+
+  const pickColor = () => {
+    const r = Math.random();
+    if (r < 0.34) return pick(P.reds);
+    if (r < 0.62) return pick(P.pinks);
+    if (r < 0.80) return pick(P.whites);
+    return pick(P.golds);
+  };
+  const brights = [].concat(P.whites, P.golds, P.pinks);
+
+  /* ---------- 0) CENTRO: "Te amo" en español, siempre presente ---------- */
+  const centerText = 'Te amo';
+  const centerSize = clamp(W * 0.075, 22, 72);
+  scratch.font = fontStr(100, true);
+  const centerW = scratch.measureText(centerText).width * centerSize / 100;
+  const cx0 = W / 2, cy0 = H * 0.5;
+  const chw = centerW / 2 + 2, chh = centerSize * 0.62 + 2;
+  occupy(cx0 - chw, cy0 - chh, cx0 + chw, cy0 + chh);
+  items.push({
+    text: centerText, font: fontStr(centerSize, true), size: centerSize,
+    x: cx0, y: cy0, rot: 0, color: '#fff0f5', start: 0
+  });
+
+  /* ---------- 1) CONTORNO: frases siguiendo la curva ---------- */
+  const SAMPLES = 1600;
+  const pts = [];
+  let total = 0, prevX = 0, prevY = 0;
+  for (let i = 0; i <= SAMPLES; i++) {
+    const t = (i / SAMPLES) * TAU;
+    const x = toX(HX(t)), y = toY(HY(t));
+    if (i) total += Math.hypot(x - prevX, y - prevY);
+    pts.push({ x, y, l: total });
+    prevX = x; prevY = y;
+  }
+  function at(l) {                       // posición + tangente a una distancia l del inicio
+    let lo = 0, hi = pts.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (pts[m].l < l) lo = m; else hi = m; }
+    const a = pts[lo], b = pts[hi];
+    const f = (l - a.l) / ((b.l - a.l) || 1);
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, dx: b.x - a.x, dy: b.y - a.y };
+  }
+
+  const osz = clamp(W * 0.021, 7.5, 15);
+  const edgeOff = osz * 0.98;                     // margen FIJO al contorno (no depende del tamaño)
+  let L = osz * 0.3, guard = 0;
+  while (L < total - osz && guard++ < 600) {
+    let placedW = 0;
+    for (let attempt = 0; attempt < 3 && !placedW; attempt++) {
+      const ph = pick(lib);
+      const size = osz * rand(0.96, 1.06);         // tamaño uniforme: contorno regular
+      const w = ph.w100 * size / 100;
+      if (L + w > total - 2) break;
+
+      const c = at(L + w / 2);
+      const len = Math.hypot(c.dx, c.dy) || 1;
+      const ux = c.dx / len, uy = c.dy / len;
+      let ang = Math.atan2(uy, ux);
+      if (Math.abs(ang) > Math.PI / 2) ang += Math.PI;   // evita texto boca abajo
+
+      const x = c.x - uy * edgeOff, y = c.y + ux * edgeOff;
+      const hw = w / 2 + 1, hh = size * 0.54 + 1;
+      const cs = Math.abs(Math.cos(ang)), sn = Math.abs(Math.sin(ang));
+      const ex = cs * hw + sn * hh, ey = sn * hw + cs * hh;
+
+      // Toda la caja debe quedar dentro: ninguna palabra puede sobresalir
+      const corners = [[-ex,-ey],[ex,-ey],[-ex,ey],[ex,ey],[0,0]];
+      let ok = true;
+      for (let q = 0; q < corners.length; q++) {
+        if (!inside(x + corners[q][0], y + corners[q][1])) { ok = false; break; }
+      }
+      if (!ok || hits(x - ex, y - ey, x + ex, y + ey)) continue;
+
+      occupy(x - ex, y - ey, x + ex, y + ey);
+      // El contorno se dibuja desde la punta inferior hacia arriba, por ambos lados a la vez
+      const key = Math.abs((L + w / 2) - total / 2) / (total / 2);
+      items.push({
+        text: ph.text, font: fontStr(size, ph.latin), size, x, y, rot: ang,
+        color: pick(brights),
+        start: T.outlineDelay + key * T.outlineSeconds
+      });
+      placedW = w;
+    }
+    L += placedW ? placedW + osz * 0.55 : osz * 0.6;
+  }
+
+  /* ---------- 2) RELLENO: empaquetado de grande a pequeño ---------- */
+  const sMax = Math.max(10, W * 0.05);
+  const sMin = Math.max(5.2, W * 0.0118);
+  const STAGES = 16;
+  const fill = [];
+
+  for (let st = 0; st < STAGES; st++) {
+    const k = st / (STAGES - 1);
+    const base = sMax * Math.pow(sMin / sMax, k);
+    const attempts = 700 + st * 170;
+
+    for (let a = 0; a < attempts; a++) {
+      const size = base * rand(0.88, 1.12);
+      const ph = pick(lib);
+      const w = ph.w100 * size / 100;
+      const h = size * 1.08;
+      const x = rand(0, W), y = rand(0, H);
+      const rot = Math.random() < 0.45 ? rand(-0.22, 0.22) : 0;
+      const cs = Math.cos(rot), sn = Math.sin(rot);
+      const hw = w / 2 + 1.2, hh = h / 2 + 0.8;
+
+      // ¿Todas las esquinas, bordes y el centro están dentro del corazón?
+      let ok = true;
+      const lx = [-hw, hw, -hw, hw, 0, 0, -hw, hw, 0];
+      const ly = [-hh, -hh, hh, hh, -hh, hh, 0, 0, 0];
+      for (let q = 0; q < 9; q++) {
+        const px = x + lx[q] * cs - ly[q] * sn;
+        const py = y + lx[q] * sn + ly[q] * cs;
+        if (!inside(px, py)) { ok = false; break; }
+      }
+      if (!ok) continue;
+
+      const ex = Math.abs(cs) * hw + Math.abs(sn) * hh;
+      const ey = Math.abs(sn) * hw + Math.abs(cs) * hh;
+      if (hits(x - ex, y - ey, x + ex, y + ey)) continue;
+
+      occupy(x - ex, y - ey, x + ex, y + ey);
+      fill.push({
+        text: ph.text, font: fontStr(size, ph.latin), size, x, y, rot,
+        color: pickColor(), start: 0, key: 0
+      });
+    }
+  }
+
+  // Orden de aparición del relleno: florece desde el centro hacia fuera (con algo de azar)
+  const cx = W / 2, cy = H * 0.42;
+  const maxD = Math.hypot(W / 2, H * 0.6);
+  fill.forEach(it => { it.key = Math.hypot(it.x - cx, it.y - cy) / maxD * 0.75 + Math.random() * 0.25; });
+  fill.sort((a, b) => a.key - b.key);
+  fill.forEach((it, i) => {
+    it.start = T.fillDelay + (i / fill.length) * T.fillSeconds;
+    items.push(it);
+  });
+
+  // Reducción de tiempos si el usuario prefiere menos movimiento
+  if (TS !== 1) items.forEach(it => { it.start = it.start / TS; });
+
+  items.sort((a, b) => a.start - b.start);
+  return items;
+}
+
+/* ============================================================
+   DIBUJO DE UNA FRASE (p = progreso de aparición 0 → 1)
+   ============================================================ */
+function drawItem(ctx, it, p) {
+  const e = 1 - Math.pow(1 - p, 3);          // ease-out cúbico
+  const sc = 1 + (1 - e) * 0.7;              // nace un poco más grande y se asienta
+  const small = it.size < 14;
+  ctx.save();
+  ctx.translate(it.x, it.y);
+  if (it.rot) ctx.rotate(it.rot);
+  ctx.scale(sc, sc);
+  ctx.globalAlpha = e;
+  ctx.font = it.font;
+  const col = p < 0.45 ? '#ffffff' : it.color;       // destello blanco al nacer
+  if (small) {                                       // trazo oscuro: separa las frases menores
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(12,3,20,0.60)';
+    ctx.lineWidth = Math.max(0.7, it.size * 0.07);
+    ctx.lineJoin = 'round';
+    ctx.strokeText(it.text, 0, 0);
+  }
+  ctx.fillStyle = col;
+  ctx.shadowColor = it.color;
+  ctx.shadowBlur = it.size * (small ? 0.26 : 0.50) * (1 + (1 - e) * 1.3) * dpr;
+  ctx.fillText(it.text, 0, 0);
+  ctx.restore();
+}
+
+/* ============================================================
+   ESTADO Y ANIMACIÓN DEL CORAZÓN
+   ============================================================ */
+const heart = { items: [], idx: 0, active: [], elapsed: 0, done: false, baked: 0, glowShown: 0 };
+
+function paintHeartFrame() {
+  hCtx.setTransform(1, 0, 0, 1, 0, 0);
+  hCtx.clearRect(0, 0, cvHeart.width, cvHeart.height);
+  hCtx.save();
+  hCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  traceHeart(hCtx);
+  hCtx.clip();                                    // nada puede salirse de la silueta
+  hCtx.setTransform(1, 0, 0, 1, 0, 0);
+  hCtx.drawImage(bakedCanvas, 0, 0);
+  hCtx.restore();
+  hCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function paintHeartRim() {
+  bCtx.save();
+  bCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  traceHeart(bCtx);
+  bCtx.lineJoin = 'round';
+  bCtx.lineWidth = Math.max(1.2, W * 0.0022);
+  bCtx.strokeStyle = 'rgba(255,150,190,0.16)';
+  bCtx.shadowColor = 'rgba(255,80,140,0.65)';
+  bCtx.shadowBlur = Math.max(8, W * 0.018) * dpr;
+  bCtx.stroke();
+  bCtx.restore();
+}
+
+function setGlow(v) {
+  if (Math.abs(v - heart.glowShown) > 0.01) {
+    heart.glowShown = v;
+    glow.style.opacity = v.toFixed(3);
+  }
+}
+
+function initHeart(instant) {
+  layoutScreen();
+  layoutHeart();
+  heart.items  = buildItems();
+  heart.idx    = 0;
+  heart.active = [];
+  heart.elapsed= 0;
+  heart.baked  = 0;
+  heart.done   = false;
+
+  bCtx.setTransform(1, 0, 0, 1, 0, 0);
+  bCtx.clearRect(0, 0, bakedCanvas.width, bakedCanvas.height);
+  setupCtx(bCtx);
+  paintHeartRim();
+
+  if (instant) {                      // (tras un resize con el corazón ya completo)
+    heart.items.forEach(it => drawItem(bCtx, it, 1));
+    heart.idx = heart.items.length;
+    heart.done = true;
+    paintHeartFrame();
+    setGlow(0.85);
+    wrap.classList.add('done');
+    captionEl.classList.add('show');
+  } else {
+    wrap.classList.remove('done');
+    captionEl.classList.remove('show');
+    paintHeartFrame();
+    setGlow(0);
+  }
+}
+
+function updateHeart(dt) {
+  if (heart.done) return;
+  const fade = CONFIG.timing.itemFade;
+  heart.elapsed += dt * TS;
+
+  // Nuevas frases que "nacen" ahora
+  while (heart.idx < heart.items.length && heart.items[heart.idx].start <= heart.elapsed) {
+    const it = heart.items[heart.idx++];
+    it.born = it.start;
+    heart.active.push(it);
+  }
+
+  // Las que terminaron su animación se pegan en la caché
+  const still = [];
+  for (let i = 0; i < heart.active.length; i++) {
+    const it = heart.active[i];
+    if ((heart.elapsed - it.born) / fade >= 1) { drawItem(bCtx, it, 1); heart.baked++; }
+    else still.push(it);
+  }
+  heart.active = still;
+
+  // Pintado: caché + las que están apareciendo (todo recortado a la silueta)
+  paintHeartFrame();
+  hCtx.save();
+  traceHeart(hCtx);
+  hCtx.clip();
+  for (let i = 0; i < heart.active.length; i++) {
+    const it = heart.active[i];
+    drawItem(hCtx, it, clamp((heart.elapsed - it.born) / fade, 0, 1));
+  }
+  hCtx.restore();
+
+  // El resplandor crece con el progreso
+  setGlow(0.12 + 0.6 * (heart.baked / Math.max(1, heart.items.length)));
+
+  if (heart.idx >= heart.items.length && heart.active.length === 0) finishHeart();
+}
+
+function finishHeart() {
+  heart.done = true;
+  paintHeartFrame();
+  setGlow(0.85);
+  wrap.classList.add('done');                       // destello + latido (CSS)
+  setTimeout(() => captionEl.classList.add('show'), CONFIG.timing.captionDelay * 1000);
+
+  // Gran final: destello, ralentí y ráfaga de fuegos artificiales
+  setTimeout(() => {
+    finalFlash.classList.remove('fire');
+    void finalFlash.offsetWidth;                     // reinicia la animación
+    finalFlash.classList.add('fire');
+    timeScale = 0.55;
+    slowUntil = performance.now() + 2200;
+  }, 450);
+
+  for (let i = 0; i < 7; i++) {
+    setTimeout(() => {
+      launch(vw * rand(0.12, 0.88), vh * rand(0.1, 0.5), i % 3 === 1 ? 'heart' : null);
+    }, i * 230);
+  }
+}
+
+/* ============================================================
+   FUEGOS ARTIFICIALES (Canvas, con estelas y mezcla aditiva)
+   ============================================================ */
+const GRAV = 70;
+const rockets = [], sparks = [], flashes = [];
+let fxDirty = false;
+let nextLaunch = 0.5;
+let timeScale = 1, slowUntil = 0;
+
+function launch(tx, ty, forcedType) {
+  const r = Math.random();
+  const type = forcedType || (r < 0.45 ? 'peony' : r < 0.65 ? 'ring' : r < 0.82 ? 'heart' : 'willow');
+  const x0 = clamp(tx + rand(-vw * 0.08, vw * 0.08), 0, vw);
+  rockets.push({
+    x0, y0: vh + 10, x: x0, y: vh + 10, tx, ty,
+    t: 0, dur: rand(0.8, 1.25), hue: pick(CONFIG.fireworks.hues), type
+  });
+}
+
+function explode(x, y, type, hue) {
+  const scale = clamp(vw / 1100, 0.55, 1);
+  const nS = vw < 600 ? 0.7 : 1;
+  const sp = rand(130, 230) * scale;
+  const maxS = CONFIG.fireworks.maxSparks;
+  const add = (vx, vy, life, h, l, size) => {
+    if (sparks.length >= maxS) return;
+    sparks.push({ x, y, vx, vy, life: 0, max: life, hue: h, l, size });
+  };
+
+  if (type === 'heart') {
+    const n = Math.round(72 * nS);
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * TAU;
+      add(HX(t) / 16 * sp * 0.95 + rand(-4, 4), -(HY(t) + 2.5) / 17 * sp * 0.95 + rand(-4, 4),
+          rand(1.3, 1.8), hue + rand(-10, 10), 68, rand(1.3, 2.2));
+    }
+  } else if (type === 'ring') {
+    const n = Math.round(60 * nS);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      add(Math.cos(a) * sp, Math.sin(a) * sp, rand(1.2, 1.7), hue, 70, 1.8);
+    }
+    const m = Math.round(28 * nS);
+    for (let i = 0; i < m; i++) {
+      const a = (i / m) * TAU;
+      add(Math.cos(a) * sp * 0.5, Math.sin(a) * sp * 0.5, rand(1.0, 1.4), hue + 35, 80, 1.5);
+    }
+  } else if (type === 'willow') {
+    const n = Math.round(64 * nS);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, TAU), s = sp * rand(0.3, 0.75);
+      add(Math.cos(a) * s, Math.sin(a) * s, rand(2.0, 3.0), 42 + rand(-6, 6), 72, rand(1.2, 1.9));
+    }
+  } else { // peony
+    const n = Math.round(rand(70, 95) * nS);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, TAU), s = sp * (0.3 + 0.7 * Math.random());
+      add(Math.cos(a) * s, Math.sin(a) * s, rand(1.1, 1.9), hue + rand(-18, 18), rand(60, 78), rand(1.2, 2.2));
+    }
+  }
+  flashes.push({ x, y, hue, t: 0 });
+}
+
+function updateFireworks(dt) {
+  const c = fCtx;
+
+  // Lanzamientos automáticos aleatorios
+  nextLaunch -= dt;
+  if (nextLaunch <= 0) {
+    launch(vw * rand(0.08, 0.92), vh * rand(0.08, 0.55));
+    if (Math.random() < 0.25) launch(vw * rand(0.08, 0.92), vh * rand(0.08, 0.5));
+    const iv = CONFIG.fireworks.interval;
+    nextLaunch = rand(iv[0], iv[1]) * (reduceMotion ? 2.5 : 1);
+  }
+
+  const busy = rockets.length || sparks.length || flashes.length;
+  if (!busy) {
+    if (fxDirty) { c.clearRect(0, 0, vw, vh); fxDirty = false; }
+    return;
+  }
+  fxDirty = true;
+
+  // Desvanece lo anterior (deja estelas) y pasa a mezcla aditiva
+  c.globalCompositeOperation = 'destination-out';
+  c.fillStyle = 'rgba(0,0,0,0.20)';
+  c.fillRect(0, 0, vw, vh);
+  c.globalCompositeOperation = 'lighter';
+
+  // Destellos de explosión
+  for (let i = flashes.length - 1; i >= 0; i--) {
+    const f = flashes[i];
+    f.t += dt;
+    const k = f.t / 0.35;
+    if (k >= 1) { flashes.splice(i, 1); continue; }
+    const rad = 90 + k * 150;
+    const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, rad);
+    g.addColorStop(0, `hsla(${f.hue},100%,75%,${(1 - k) * 0.24})`);
+    g.addColorStop(1, `hsla(${f.hue},100%,60%,0)`);
+    c.fillStyle = g;
+    c.fillRect(f.x - rad, f.y - rad, rad * 2, rad * 2);
+  }
+
+  // Cohetes subiendo
+  for (let i = rockets.length - 1; i >= 0; i--) {
+    const r = rockets[i];
+    r.t += dt / r.dur;
+    const e = 1 - Math.pow(1 - Math.min(r.t, 1), 2.2);
+    r.x = r.x0 + (r.tx - r.x0) * e;
+    r.y = r.y0 + (r.ty - r.y0) * e;
+    if (sparks.length < CONFIG.fireworks.maxSparks) {
+      sparks.push({ x: r.x, y: r.y, vx: rand(-8, 8), vy: rand(5, 25), life: 0, max: rand(0.35, 0.7), hue: r.hue, l: 78, size: 1.1 });
+    }
+    c.fillStyle = `hsla(${r.hue},100%,88%,.9)`;
+    c.beginPath(); c.arc(r.x, r.y, 1.8, 0, TAU); c.fill();
+    if (r.t >= 1) { explode(r.tx, r.ty, r.type, r.hue); rockets.splice(i, 1); }
+  }
+
+  // Chispas
+  const drag = Math.pow(0.965, dt * 60);
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.life += dt;
+    if (s.life >= s.max) { sparks[i] = sparks[sparks.length - 1]; sparks.pop(); continue; }
+    s.vx *= drag; s.vy = s.vy * drag + GRAV * dt;
+    s.x += s.vx * dt; s.y += s.vy * dt;
+    const a = Math.pow(1 - s.life / s.max, 1.3);
+    c.fillStyle = `hsla(${s.hue},100%,${s.l}%,${(a * (0.75 + Math.random() * 0.25)).toFixed(3)})`;
+    c.beginPath(); c.arc(s.x, s.y, s.size * (0.6 + 0.4 * a), 0, TAU); c.fill();
+  }
+
+  c.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   AMBIENTE · estrellas titilantes + corazones y polvo flotando
+   ============================================================ */
+let stars = [], floaters = [];
+let shooting = null, nextShoot = rand(3.5, 8);
+function seedAmbient() {
+  const nStars = clamp(Math.round(vw * vh / 9000), 60, 220);
+  stars = [];
+  for (let i = 0; i < nStars; i++) {
+    stars.push({
+      x: rand(0, vw), y: rand(0, vh), r: rand(0.35, 1.3),
+      ph: rand(0, TAU), sp: rand(0.5, 1.8), a: rand(0.25, 0.9), warm: Math.random() < 0.2
+    });
+  }
+  const nF = clamp(Math.round(vw / 28), 14, 40);
+  floaters = [];
+  for (let i = 0; i < nF; i++) {
+    const k = Math.random();
+    floaters.push({
+      kind: k < 0.45 ? 'heart' : k < 0.85 ? 'dust' : 'spark',
+      x0: rand(0, vw), y: rand(0, vh),
+      s: rand(4, 12), vy: rand(5, 16), sway: rand(10, 32), ph: rand(0, TAU),
+      a: rand(0.15, 0.5), hue: pick([340, 350, 45, 300])
+    });
+  }
+  shooting = null;
+  nextShoot = rand(3.5, 8) * (reduceMotion ? 2.5 : 1);
+}
+
+function updateShooting(dt, c) {
+  nextShoot -= dt;
+  if (!shooting && nextShoot <= 0) {
+    const fromLeft = Math.random() < 0.5;
+    const ang = fromLeft ? rand(0.34, 0.58) : rand(Math.PI - 0.58, Math.PI - 0.34);
+    const sp = rand(430, 720);
+    shooting = {
+      x: fromLeft ? rand(-vw * 0.08, vw * 0.28) : rand(vw * 0.72, vw * 1.08),
+      y: rand(-20, vh * 0.45),
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+      t: 0, max: rand(0.65, 1.1),
+      len: rand(70, 140), hue: pick([45, 190, 340])
+    };
+    nextShoot = rand(4, 10) * (reduceMotion ? 2.5 : 1);
+  }
+  if (!shooting) return;
+
+  shooting.t += dt;
+  if (shooting.t >= shooting.max) { shooting = null; return; }
+  shooting.x += shooting.vx * dt;
+  shooting.y += shooting.vy * dt;
+
+  const v = Math.hypot(shooting.vx, shooting.vy) || 1;
+  const tx = shooting.x - shooting.vx / v * shooting.len;
+  const ty = shooting.y - shooting.vy / v * shooting.len;
+  const a = Math.sin(shooting.t / shooting.max * Math.PI) * 0.9;
+  const g = c.createLinearGradient(tx, ty, shooting.x, shooting.y);
+  g.addColorStop(0, `hsla(${shooting.hue},100%,80%,0)`);
+  g.addColorStop(1, `hsla(${shooting.hue},100%,92%,${a.toFixed(3)})`);
+  c.strokeStyle = g;
+  c.lineWidth = 1.7;
+  c.lineCap = 'round';
+  c.beginPath(); c.moveTo(tx, ty); c.lineTo(shooting.x, shooting.y); c.stroke();
+  c.fillStyle = `hsla(${shooting.hue},100%,96%,${a.toFixed(3)})`;
+  c.beginPath(); c.arc(shooting.x, shooting.y, 1.9, 0, TAU); c.fill();
+  c.lineCap = 'butt';
+}
+
+let clock = 0;
+function drawAmbient(dt) {
+  clock += dt;
+  const c = sCtx;
+  c.clearRect(0, 0, vw, vh);
+
+  // Estrellas
+  for (let i = 0; i < stars.length; i++) {
+    const s = stars[i];
+    const a = s.a * (0.55 + 0.45 * Math.sin(clock * s.sp + s.ph));
+    c.fillStyle = s.warm ? `rgba(255,225,185,${a.toFixed(3)})` : `rgba(235,230,255,${a.toFixed(3)})`;
+    c.fillRect(s.x - s.r, s.y - s.r, s.r * 2, s.r * 2);
+  }
+
+  // Flotantes
+  for (let i = 0; i < floaters.length; i++) {
+    const f = floaters[i];
+    f.y -= f.vy * dt;
+    if (f.y < -24) { f.y = vh + 24; f.x0 = rand(0, vw); }
+    const x = f.x0 + Math.sin(clock * 0.5 + f.ph) * f.sway;
+    const fadeEdge = clamp(Math.min(f.y, vh - f.y) / 80, 0, 1);   // se desvanecen en los bordes
+    const a = f.a * fadeEdge;
+    if (a <= 0.01) continue;
+
+    if (f.kind === 'heart') {
+      c.fillStyle = `hsla(${f.hue},90%,70%,${a.toFixed(3)})`;
+      heartPath(c, x, f.y, f.s);
+      c.fill();
+    } else if (f.kind === 'dust') {
+      c.fillStyle = `hsla(${f.hue},100%,85%,${(a * 0.8).toFixed(3)})`;
+      c.beginPath(); c.arc(x, f.y, f.s * 0.18, 0, TAU); c.fill();
+    } else {
+      const r = f.s * 0.5;
+      c.strokeStyle = `rgba(255,235,200,${a.toFixed(3)})`;
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(x - r, f.y); c.lineTo(x + r, f.y);
+      c.moveTo(x, f.y - r); c.lineTo(x, f.y + r);
+      c.stroke();
+    }
+  }
+
+  updateShooting(dt, c);
+}
+
+/* ============================================================
+   BUCLE PRINCIPAL
+   ============================================================ */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  if (slowUntil) {
+    const left = slowUntil - now;
+    if (left <= 0) { slowUntil = 0; timeScale = 1; }
+    else timeScale = 0.55 + 0.45 * (1 - clamp(left / 2200, 0, 1));
+  }
+  const sdt = dt * timeScale;
+
+  updateHeart(dt);
+  drawAmbient(sdt);
+  updateFireworks(sdt);
+
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   ARRANQUE + RESIZE + INTERACCIÓN OPCIONAL
+   ============================================================ */
+buildHeartOutline();
+initHeart(false);
+seedAmbient();
+requestAnimationFrame(frame);
+
+let resizeTimer = null, lastW = vw, lastH = vh;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const dw = Math.abs(window.innerWidth - lastW);
+    const dh = Math.abs(window.innerHeight - lastH);
+    if (dw < 2 && dh < 100) return;           // p. ej. la barra del navegador móvil: no reconstruir
+    const wasDone = heart.done;
+    rockets.length = sparks.length = flashes.length = 0;
+    initHeart(wasDone);                       // si ya estaba completo, se reconstruye al instante
+    seedAmbient();
+    lastW = vw; lastH = vh;
+  }, 220);
+});
+
+// Un toque o clic lanza un fuego artificial extra (totalmente opcional)
+window.addEventListener('pointerdown', e => launch(e.clientX, clamp(e.clientY, vh * 0.08, vh * 0.7)));
+
+})();
+</script>
+</body>
+</html>
